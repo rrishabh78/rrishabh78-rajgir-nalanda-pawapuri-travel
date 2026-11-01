@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Travel Website</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Arial,sans-serif;}
+
+/* ---------- Header / logo ---------- */
+header{position:fixed;top:65px;left:0;width:100%;display:flex;align-items:center;padding:15px 40px;z-index:10;background:transparent;}
+.logo{display:flex;align-items:center;}
+.logo img{width:60px;height:60px;border-radius:50%;object-fit:cover;object-position:center;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.5);}
+.logo-fallback{display:none;width:60px;height:60px;border-radius:50%;background:darkgoldenrod;color:white;font-size:30px;align-items:center;justify-content:center;border:2px solid white;}
+.logo h1{margin-left:15px;font-size:26px;color:white;font-style:italic;text-shadow:2px 2px 6px rgba(0,0,0,0.7);}
+
+/* ---------- Photo slideshow (hero + popup pages), 2 sec ---------- */
+.hero{position:relative;width:100%;height:100vh;background:#222;overflow:hidden;}
+.bg-slide{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;background-size:cover;background-position:center;opacity:0;transition:opacity .7s ease;}
+.hero .bg-slide{position:absolute;z-index:0;}
+.bg-slide.active{opacity:1;}
+.content{position:absolute;z-index:2;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:90%;}
+.content p,.home-text p{font-size:45px;color:darkgoldenrod;font-weight:bold;text-shadow:2px 2px 8px rgba(0,0,0,0.8);}
+
+/* ---------- Top nav ---------- */
+.bottom-nav{position:fixed;top:0;left:0;width:100%;display:flex;justify-content:space-around;align-items:center;background:white;box-shadow:0 2px 10px rgba(0,0,0,0.2);padding:15px 0;z-index:200;}
+.nav-item{position:relative;text-align:center;}
+.nav-item button{background:none;border:none;color:blue;font-size:18px;font-weight:bold;font-family:Arial,sans-serif;cursor:pointer;}
+.nav-item button:active,.nav-item button:focus{color:red;}
+.hover-item:hover .dropdown-menu{display:block;}
+.dropdown-menu{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);background:white;box-shadow:0 2px 10px rgba(0,0,0,0.2);border-radius:8px;min-width:160px;overflow:hidden;padding-top:10px;margin-top:-10px;}
+.dropdown-menu.show{display:block;}
+.dropdown-menu button{display:block;width:100%;padding:10px 16px;text-align:left;color:black;font-size:15px;white-space:nowrap;background:none;border:none;cursor:pointer;}
+.dropdown-menu button:hover{background:#f0f0f0;}
+
+/* ---------- Common overlays ---------- */
+.spot-overlay,.explore-overlay,.stay-overlay,.contact-overlay{
+    display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+    background-color:#222;
+    z-index:100;justify-content:center;align-items:center;
+}
+.spot-overlay.show,.explore-overlay.show,.stay-overlay.show,.contact-overlay.show{display:flex;}
+
+.spot-close,.explore-close{
+    position:absolute;top:8px;right:14px;font-size:26px;color:white;background:rgba(0,0,0,0.4);
+    border-radius:50%;width:32px;height:32px;line-height:32px;text-align:center;cursor:pointer;z-index:5;
+}
+.explore-back{position:absolute;top:14px;left:16px;background:none;border:none;color:darkgoldenrod;font-size:15px;font-weight:bold;cursor:pointer;z-index:5;}
+
+/* ---------- Home page: text on top, 3 cards in a row below ---------- */
+.spot-overlay{flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;padding:85px 10px 20px;}
+.home-text{margin-top:auto;text-align:center;padding:10px;}
+.spot-overlay .spot-close{position:fixed;top:68px;right:14px;z-index:6;}
+.spot-box{background:white;border-radius:10px;max-width:95%;width:900px;text-align:center;position:relative;padding:20px;margin:20px 0 auto;}
+.spot-grid{display:flex;flex-direction:row;justify-content:space-between;gap:15px;}
+.spot-column{flex:1;display:flex;flex-direction:column;align-items:center;}
+.spot-column .img-slot{width:100%;}
+.spot-column img{width:100%;height:180px;object-fit:cover;border-radius:8px;display:block;}
+.spot-column .img-placeholder{height:180px;}
+.spot-column h2{margin:12px 0 2px;font-size:18px;color:black;}
+.spot-column .spot-city{margin:0 0 8px;color:black;font-size:14px;font-style:italic;}
+.spot-column .click-here{background:none;border:none;color:blue;font-size:15px;font-weight:bold;cursor:pointer;text-decoration:underline;}
+@media (max-width:600px){
+    .spot-grid{flex-direction:column;}
+    .spot-column img,.spot-column .img-placeholder{height:150px;}
+    .content p,.home-text p{font-size:26px;}
+    .logo h1{font-size:18px;}
+    header{padding:15px;}
+    .nav-item button{font-size:14px;}
+}
+
+/* ---------- Image placeholders ---------- */
+.img-placeholder{width:100%;height:140px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#f0e6d2,#e4d4b0);margin-bottom:4px;}
+.img-placeholder .emoji{font-size:32px;margin-bottom:4px;}
+.img-placeholder .placeholder-text{font-size:11px;color:#6b5a35;font-weight:bold;padding:0 8px;text-align:center;}
+
+/* ---------- Explore ---------- */
+.explore-box{background:white;border-radius:10px;max-width:95%;width:700px;max-height:85vh;overflow-y:auto;position:relative;padding:45px 25px 30px;}
+.explore-box h2{color:darkgoldenrod;text-align:center;margin-bottom:20px;}
+.explore-spot{border-bottom:1px solid #eee;padding:15px 0;}
+.explore-spot h3{color:black;margin-bottom:8px;}
+.explore-spot img{width:100%;max-height:220px;object-fit:cover;border-radius:8px;display:block;margin-bottom:8px;}
+.explore-spot .img-placeholder{height:180px;margin-bottom:8px;}
+.explore-spot .blurb{color:#333;font-size:15px;line-height:1.5;}
+.explore-spot .history{display:none;color:#555;font-size:14px;line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px dashed #ccc;}
+.explore-spot .history.show{display:block;}
+.discover-btn{display:block;margin:20px auto 0;padding:12px 30px;background:darkgoldenrod;color:white;border:none;border-radius:6px;font-size:16px;font-weight:bold;cursor:pointer;}
+
+/* ---------- Stay ---------- */
+.stay-box{background:white;border-radius:10px;max-width:95%;width:750px;max-height:85vh;overflow-y:auto;position:relative;padding:30px 25px;}
+.stay-box h2{color:darkgoldenrod;text-align:center;margin-bottom:20px;}
+.hotel-card{border-bottom:1px solid #eee;padding:15px 0;}
+.hotel-images{display:flex;gap:8px;margin-bottom:10px;}
+.hotel-images .img-box{flex:1;text-align:center;min-width:0;}
+.hotel-images img{width:100%;height:140px;object-fit:cover;border-radius:8px;display:block;margin-bottom:4px;}
+.hotel-images .img-label{font-size:12px;color:#777;}
+.hotel-location{font-size:15px;color:#222;font-weight:600;margin-bottom:8px;}
+.hotel-facilities{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.hotel-facilities span{background:#f2f2f2;color:#333;font-size:14px;padding:4px 10px;border-radius:12px;}
+.hotel-card h3{color:black;margin-bottom:4px;}
+.hotel-meta{display:flex;gap:15px;font-size:14px;color:#444;margin-bottom:8px;}
+.hotel-meta .rating{color:#e67e22;font-weight:bold;}
+.hotel-meta .price{color:black;font-weight:bold;font-size:16px;}
+.hotel-desc{color:#333;font-size:14px;line-height:1.5;margin-bottom:10px;}
+.hotel-footer{display:flex;justify-content:flex-end;}
+.booking-btn{background:blue;color:white;border:none;padding:8px 22px;border-radius:6px;font-size:14px;font-weight:bold;cursor:pointer;}
+
+/* ---------- Booking form ---------- */
+.booking-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:300;justify-content:center;align-items:center;}
+.booking-overlay.show{display:flex;}
+.booking-box{background:white;border-radius:10px;max-width:95%;width:480px;max-height:90vh;overflow-y:auto;position:relative;padding:45px 25px 30px;}
+.booking-box h2{color:darkgoldenrod;text-align:center;margin-bottom:4px;}
+.booking-box .booking-price{text-align:center;color:black;font-weight:bold;margin-bottom:20px;}
+.booking-field{margin-bottom:14px;}
+.booking-field label{display:block;font-size:14px;color:#333;margin-bottom:4px;font-weight:bold;}
+.booking-field input{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;}
+.booking-row{display:flex;gap:12px;}
+.booking-row .booking-field{flex:1;}
+.confirm-btn{display:block;width:100%;margin-top:10px;padding:12px;background:blue;color:white;border:none;border-radius:6px;font-size:16px;font-weight:bold;cursor:pointer;}
+.confirm-box{display:none;text-align:center;}
+.confirm-box .tick{font-size:40px;color:green;margin-bottom:8px;}
+.confirm-box h3{color:green;margin-bottom:15px;}
+.confirm-summary{text-align:left;background:#f7f7f7;border-radius:8px;padding:15px;margin-bottom:15px;}
+.confirm-summary p{font-size:14px;color:#333;margin-bottom:6px;}
+.confirm-summary p span{font-weight:bold;color:black;}
+.confirm-box .booking-id{font-size:14px;color:#555;margin-bottom:15px;}
+.done-btn{display:block;width:100%;padding:12px;background:darkgoldenrod;color:white;border:none;border-radius:6px;font-size:16px;font-weight:bold;cursor:pointer;}
+
+/* ---------- Contact ---------- */
+.contact-box{background:white;border-radius:10px;max-width:95%;width:620px;max-height:88vh;overflow-y:auto;position:relative;padding:30px 25px;}
+.contact-box h2{color:darkgoldenrod;text-align:center;margin-bottom:20px;}
+.contact-info p{font-size:15px;color:#333;margin-bottom:10px;}
+.contact-info p span{font-weight:bold;color:black;}
+.contact-social{display:flex;justify-content:center;gap:18px;margin:18px 0;}
+.contact-social a{text-decoration:none;font-size:24px;}
+.contact-box h3{color:black;margin:18px 0 10px;font-size:17px;}
+.contact-map iframe{width:100%;height:220px;border:0;border-radius:8px;margin-bottom:18px;}
+.contact-form input,.contact-form textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;margin-bottom:12px;font-family:Arial,sans-serif;}
+.contact-form textarea{height:80px;resize:vertical;}
+.send-btn{display:block;width:100%;padding:12px;background:blue;color:white;border:none;border-radius:6px;font-size:16px;font-weight:bold;cursor:pointer;}
+.contact-sent{display:none;text-align:center;color:green;font-weight:bold;margin-top:10px;}
+</style>
+</head>
+<body>
+
+<!-- ===== Top navigation ===== -->
+<nav class="bottom-nav">
+    <div class="nav-item"><button onclick="showHome()">Home</button></div>
+
+    <div class="nav-item hover-item">
+        <button onclick="toggleMenu(event,'explore-menu')">Explore &#9662;</button>
+        <div class="dropdown-menu" id="explore-menu">
+            <button onclick="openExplore('nalanda')">Nalanda</button>
+            <button onclick="openExplore('rajgir')">Rajgir</button>
+            <button onclick="openExplore('pawapuri')">Pawapuri</button>
+        </div>
+    </div>
+
+    <div class="nav-item hover-item">
+        <button onclick="toggleMenu(event,'stay-menu')">Stay Booking &#9662;</button>
+        <div class="dropdown-menu" id="stay-menu">
+            <button onclick="openStay('nalanda')">Nalanda</button>
+            <button onclick="openStay('rajgir')">Rajgir</button>
+            <button onclick="openStay('pawapuri')">Pawapuri</button>
+        </div>
+    </div>
+
+    <div class="nav-item"><button onclick="openContact()">Contact</button></div>
+</nav>
+
+<header>
+    <div class="logo">
+        <img src="logo.jpg" alt="logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <span class="logo-fallback">&#129523;</span>
+        <h1><i>Welcome to Travel Website</i></h1>
+    </div>
+</header>
+
+<!-- ===== Hero ===== -->
+<div class="hero" id="hero">
+    <div class="content">
+        <p>Discover the timeless beauty <br> of Nalanda,<br> Rajgir and Pawapuri</p>
+    </div>
+</div>
+
+<!-- ===== Home page ===== -->
+<div class="spot-overlay" id="spot-overlay">
+    <span class="spot-close" onclick="closeSpot()">&times;</span>
+    <div class="home-text">
+        <p>Discover the timeless beauty <br> of Nalanda,<br> Rajgir and Pawapuri</p>
+    </div>
+    <div class="spot-box">
+        <div class="spot-grid" id="spot-grid"></div>
+    </div>
+</div>
+
+<!-- ===== Explore page ===== -->
+<div class="explore-overlay" id="explore-overlay">
+    <div class="explore-box">
+        <button class="explore-back" onclick="backToHome()">&larr; Back</button>
+        <span class="explore-close" onclick="closeExplore()">&times;</span>
+        <h2 id="explore-title"></h2>
+        <div id="explore-list"></div>
+        <button class="discover-btn" id="discover-btn" onclick="toggleHistory()">Discover</button>
+    </div>
+</div>
+
+<!-- ===== Stay page ===== -->
+<div class="stay-overlay" id="stay-overlay">
+    <div class="stay-box">
+        <span class="explore-close" onclick="closeStay()">&times;</span>
+        <h2 id="stay-title"></h2>
+        <div id="stay-list"></div>
+    </div>
+</div>
+
+<!-- ===== Booking form ===== -->
+<div class="booking-overlay" id="booking-overlay">
+    <div class="booking-box">
+        <button class="explore-back" onclick="closeBooking()">&larr; Back</button>
+        <span class="explore-close" onclick="closeBooking()">&times;</span>
+        <h2 id="booking-hotel-name"></h2>
+        <p class="booking-price" id="booking-hotel-price"></p>
+
+        <form id="booking-form" onsubmit="return submitBooking(event)">
+            <div class="booking-field">
+                <label for="b-name">Full Name</label>
+                <input type="text" id="b-name" required>
+            </div>
+            <div class="booking-field">
+                <label for="b-phone">Phone Number</label>
+                <input type="tel" id="b-phone" pattern="[0-9]{10}" maxlength="10" placeholder="10 digit number" required>
+            </div>
+            <div class="booking-row">
+                <div class="booking-field">
+                    <label for="b-checkin">Check-in</label>
+                    <input type="date" id="b-checkin" required>
+                </div>
+                <div class="booking-field">
+                    <label for="b-checkout">Check-out</label>
+                    <input type="date" id="b-checkout" required>
+                </div>
+            </div>
+            <div class="booking-row">
+                <div class="booking-field">
+                    <label for="b-guests">Guests</label>
+                    <input type="number" id="b-guests" min="1" max="10" value="1" required>
+                </div>
+                <div class="booking-field">
+                    <label for="b-rooms">Rooms</label>
+                    <input type="number" id="b-rooms" min="1" max="5" value="1" required>
+                </div>
+            </div>
+            <button type="submit" class="confirm-btn">Confirm Booking</button>
+        </form>
+
+        <div class="confirm-box" id="confirm-box">
+            <div class="tick">&#10004;</div>
+            <h3>Booking Confirmed!</h3>
+            <div class="confirm-summary" id="confirm-summary"></div>
+            <p class="booking-id" id="booking-id"></p>
+            <button class="done-btn" onclick="closeBooking()">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Contact page ===== -->
+<div class="contact-overlay" id="contact-overlay">
+    <div class="contact-box">
+        <span class="explore-close" onclick="closeContact()">&times;</span>
+        <h2>Contact Us</h2>
+        <div class="contact-info">
+            <p><span>Phone:</span> +91 00000 00000</p>
+            <p><span>Email:</span> yourmail@example.com</p>
+            <p><span>Address:</span> Nalanda, Bihar, India</p>
+        </div>
+        <div class="contact-social">
+            <a href="#" title="Facebook">&#128216;</a>
+            <a href="#" title="Instagram">&#128247;</a>
+            <a href="#" title="YouTube">&#9654;&#65039;</a>
+            <a href="#" title="WhatsApp">&#128172;</a>
+        </div>
+        <h3>Find us on map</h3>
+        <div class="contact-map">
+            <iframe src="https://www.google.com/maps?q=Nalanda,Bihar&output=embed" loading="lazy" allowfullscreen></iframe>
+        </div>
+        <h3>Send us a message</h3>
+        <form class="contact-form" id="contact-form" onsubmit="return sendMessage(event)">
+            <input type="text" placeholder="Your Name" required>
+            <input type="email" placeholder="Your Email" required>
+            <textarea placeholder="Your Message" required></textarea>
+            <button type="submit" class="send-btn">Send Message</button>
+        </form>
+        <p class="contact-sent" id="contact-sent">Thank you! Your message has been sent.</p>
+    </div>
+</div>
+
+<script>
+/* ===== Slideshow photos: ye 8 file naam apni photos ke hisaab se rakho ===== */
+var bgPics = [
+    "photo1.jpg","photo2.jpg","photo3.jpg","photo4.jpg",
+    "photo5.jpg","photo6.jpg","photo7.jpg","photo8.jpg"
+];
+
+/* Ye photos "Discover the timeless beauty..." wali jagah (Home) aur baaki pages ke peeche har 2 second me badalti hain */
+(function(){
+    var ids = ["hero","spot-overlay","explore-overlay","stay-overlay","contact-overlay"];
+    var sets = ids.map(function(id){
+        var c = document.getElementById(id);
+        var first = c.firstChild;
+        return bgPics.map(function(u){
+            var d = document.createElement("div");
+            d.className = "bg-slide";
+            d.style.backgroundImage = 'linear-gradient(rgba(0,0,0,0.25),rgba(0,0,0,0.25)),url("'+u+'")';
+            c.insertBefore(d, first);
+            return d;
+        });
+    });
+    var i = 0;
+    sets.forEach(function(set){ set[0].classList.add("active"); });
+    setInterval(function(){
+        sets.forEach(function(set){ set[i].classList.remove("active"); });
+        i = (i + 1) % bgPics.length;
+        sets.forEach(function(set){ set[i].classList.add("active"); });
+    }, 2000);
+})();
+
+/* ================= Wikipedia / Wikimedia photo helpers =================
+   Explore aur Hotel ki photos internet se apne aap aati hain. Agar kisi jagah ki photo
+   galat/nahi aaye to us item me  img:"apni-photo.jpeg"  likh do, wahi dikhegi. */
+var wikiCache = {};
+function wikiImage(q){
+    if(wikiCache[q]) return wikiCache[q];
+    var url = "https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=5&prop=pageimages&piprop=thumbnail&pithumbsize=700&pilimit=5&gsrsearch=" + encodeURIComponent(q);
+    wikiCache[q] = fetch(url).then(function(r){ return r.json(); }).then(function(d){
+        if(!d.query) return "";
+        var pages = Object.keys(d.query.pages).map(function(k){ return d.query.pages[k]; })
+            .filter(function(p){ return p.thumbnail; })
+            .sort(function(a,b){ return a.index - b.index; });
+        return pages.length ? pages[0].thumbnail.source : "";
+    }).catch(function(){ return ""; });
+    return wikiCache[q];
+}
+
+var commonsCache = {};
+function commonsImages(q){
+    if(commonsCache[q]) return commonsCache[q];
+    var url = "https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime&iiurlwidth=500&gsrsearch=" + encodeURIComponent(q);
+    commonsCache[q] = fetch(url).then(function(r){ return r.json(); }).then(function(d){
+        if(!d.query) return [];
+        return Object.keys(d.query.pages).map(function(k){ return d.query.pages[k]; })
+            .filter(function(p){ return p.imageinfo && p.imageinfo[0].mime === "image/jpeg" && p.imageinfo[0].thumburl; })
+            .sort(function(a,b){ return a.index - b.index; })
+            .map(function(p){ return p.imageinfo[0].thumburl; });
+    }).catch(function(){ return []; });
+    return commonsCache[q];
+}
+
+function placeholder(label, emoji){
+    return '<div class="img-placeholder"><div class="emoji">'+emoji+'</div><div class="placeholder-text">'+label+'</div></div>';
+}
+function setImg(el, src, label){
+    var im = new Image();
+    im.onload = function(){ el.innerHTML = ""; el.appendChild(im); };
+    im.alt = label;
+    im.src = src;
+}
+/* ek photo ka dabba: apni img ho to wahi, warna Wikipedia se */
+function slot(opts){
+    var attrs = "";
+    var inner = "";
+    if(opts.img){ inner = '<img src="'+opts.img+'" alt="'+opts.label+'">'; }
+    else {
+        inner = placeholder(opts.label, opts.emoji);
+        if(opts.q){ attrs = ' data-q="'+opts.q+'" data-label="'+opts.label+'"'; }
+        if(opts.cq){ attrs = ' data-cq="'+opts.cq+'" data-ci="'+opts.ci+'" data-label="'+opts.label+'"'; }
+    }
+    return '<div class="img-slot"'+attrs+'>'+inner+'</div>';
+}
+function fillImages(root){
+    root.querySelectorAll("[data-q]").forEach(function(el){
+        wikiImage(el.getAttribute("data-q")).then(function(src){
+            if(src) setImg(el, src, el.getAttribute("data-label"));
+        });
+    });
+    root.querySelectorAll("[data-cq]").forEach(function(el){
+        var ci = parseInt(el.getAttribute("data-ci"), 10);
+        commonsImages(el.getAttribute("data-cq")).then(function(list){
+            if(list.length) setImg(el, list[ci % list.length], el.getAttribute("data-label"));
+        });
+    });
+}
+
+/* ================= DATA ================= */
+var places = {
+    nalanda: {
+        name: "Nalanda", q: "Nalanda", tag: "Ancient university town",
+        spots: [
+            {name:"Nalanda Mahavihara Ruins", q:"Nalanda", blurb:"UNESCO World Heritage Site with red-brick monasteries, temples and stupas of the ancient university.", history:"Nalanda was a great centre of Buddhist learning from the 5th century CE and attracted students from many countries."},
+            {name:"Nalanda Archaeological Museum", q:"Nalanda Archaeological Museum", blurb:"Museum near the ruins displaying sculptures, bronzes, coins and terracotta found during excavation.", history:"The museum preserves the objects found at the Nalanda site and helps visitors understand the university's past."},
+            {name:"Xuanzang Memorial Hall", q:"Xuanzang Memorial Hall Nalanda", blurb:"Memorial dedicated to the Chinese traveller and scholar Xuanzang, who studied at Nalanda.", history:"Xuanzang visited Nalanda in the 7th century and later carried many Buddhist texts back to China."},
+            {name:"Surya Mandir, Baragaon", q:"Baragaon Nalanda Surya temple", blurb:"Old sun temple and sacred pond, famous for the Chhath festival.", history:"Baragaon is one of the most important places for Chhath Puja in Bihar."},
+            {name:"Nava Nalanda Mahavihara", q:"Nava Nalanda Mahavihara", blurb:"Modern institute for Pali and Buddhist studies near the ancient site.", history:"It was set up to carry forward the old tradition of learning of Nalanda."}
+        ]
+    },
+    rajgir: {
+        name: "Rajgir", q: "Rajgir", tag: "Hills, hot springs and history",
+        spots: [
+            {name:"Vishwa Shanti Stupa", q:"Vishwa Shanti Stupa Rajgir", blurb:"White peace pagoda on Ratnagiri hill, reached by ropeway.", history:"Built by Japanese Buddhists as a symbol of world peace."},
+            {name:"Griddhakuta Hill", q:"Gridhakuta Vulture Peak Rajgir", blurb:"Vulture Peak, where Lord Buddha is said to have delivered many sermons.", history:"A popular pilgrimage place for Buddhist visitors."},
+            {name:"Brahmakund Hot Springs", q:"Brahmakund Rajgir hot springs", blurb:"Natural hot water springs believed to have healing power.", history:"Pilgrims take a holy dip here and the springs are mentioned in old texts."},
+            {name:"Venu Van", q:"Venu Van Rajgir bamboo grove", blurb:"Peaceful bamboo garden connected with the Buddha's time.", history:"It is believed that King Bimbisara gifted this grove to the Buddha."},
+            {name:"Jarasandh ka Akhara", q:"Jarasandha Akhara Rajgir", blurb:"Ancient wrestling ground linked with the Mahabharata story.", history:"Tradition says Bhima and Jarasandha fought here."}
+        ]
+    },
+    pawapuri: {
+        name: "Pawapuri", q: "Pawapuri", tag: "Sacred Jain pilgrimage",
+        spots: [
+            {name:"Jal Mandir", q:"Jal Mandir Pawapuri", blurb:"Beautiful white temple in the middle of a lotus pond.", history:"It marks the place where Lord Mahavira attained nirvana."},
+            {name:"Samosharan Mandir", q:"Samosharan Pawapuri temple", blurb:"Temple built to represent the divine assembly hall of Tirthankara.", history:"Pilgrims visit it along with the Jal Mandir."},
+            {name:"Kamal Sarovar", q:"Pawapuri lotus pond Jal Mandir", blurb:"Lotus pond around the Jal Mandir, best seen in the morning.", history:"The lotus flowers add to the calm of the place."},
+            {name:"Digambar Jain Temple", q:"Digambar Jain temple Pawapuri", blurb:"Peaceful temple with Jain idols and old-style architecture.", history:"Devotees from across India visit this temple."},
+            {name:"Mahavir Nirvan Sthal", q:"Gaon Mandir Pawapuri Mahavira", blurb:"Holy site connected with the last days of Lord Mahavira.", history:"Diwali is celebrated here with special prayers."}
+        ]
+    }
+};
+
+/* Hotels: naam, price, rating apne asli hotel se badal lo (ye example hain).
+   Photos generic hotel photos hain (Wikimedia Commons). Asli photo ho to imgs:["room.jpeg","lobby.jpeg","outside.jpeg"] likho. */
+var hotels = {
+    nalanda: [
+        {name:"Hotel Nalanda Palace", location:"Near Nalanda Ruins", price:1800, rating:4.2, facilities:["Free WiFi","AC Rooms","Parking","Restaurant"], desc:"Comfortable rooms close to the main tourist spots."},
+        {name:"Heritage Inn Nalanda", location:"Nalanda Main Road", price:2500, rating:4.4, facilities:["Free WiFi","AC Rooms","Breakfast"], desc:"Clean, family friendly stay with good food."},
+        {name:"Gautam Residency", location:"Near Nalanda Museum", price:2000, rating:4.1, facilities:["AC Rooms","Parking","Restaurant"], desc:"Simple rooms and friendly staff for tourists."},
+        {name:"Hotel Buddha Vihar", location:"Nalanda Bus Stand Road", price:1500, rating:3.9, facilities:["Free WiFi","Fan/AC Rooms","Veg Food"], desc:"Budget stay with easy transport to all places."},
+        {name:"Royal Stay Nalanda", location:"Biharsharif Road", price:3000, rating:4.5, facilities:["Free WiFi","AC Rooms","Breakfast","Parking"], desc:"Premium rooms with a calm and clean atmosphere."}
+    ],
+    rajgir: [
+        {name:"Hotel Rajgir Residency", location:"Near Ropeway, Rajgir", price:2200, rating:4.3, facilities:["Free WiFi","AC Rooms","Parking","Restaurant"], desc:"Easy access to the ropeway and hot springs."},
+        {name:"Valley View Rajgir", location:"Rajgir Hills Road", price:3200, rating:4.5, facilities:["Free WiFi","Pool","Breakfast","Parking"], desc:"Calm hill view rooms for a relaxing trip."},
+        {name:"Hotel Vaibhav Palace", location:"Rajgir Main Market", price:1900, rating:4.0, facilities:["AC Rooms","Restaurant","Parking"], desc:"Good value stay in the middle of the market."},
+        {name:"Green Hills Resort", location:"Near Vishwa Shanti Stupa", price:3800, rating:4.6, facilities:["Free WiFi","Pool","Breakfast","Garden"], desc:"Resort style stay surrounded by green hills."},
+        {name:"Hotel Magadh Regency", location:"Rajgir Station Road", price:1700, rating:3.9, facilities:["Free WiFi","Fan/AC Rooms","Veg Food"], desc:"Simple and comfortable stay near the station."}
+    ],
+    pawapuri: [
+        {name:"Pawapuri Yatri Niwas", location:"Near Jal Mandir", price:1200, rating:4.0, facilities:["Fan/AC Rooms","Parking","Veg Food"], desc:"Simple and clean stay for pilgrims."},
+        {name:"Mahavir Guest House", location:"Pawapuri Main Road", price:1600, rating:4.1, facilities:["Free WiFi","AC Rooms","Veg Food"], desc:"Peaceful place close to the temples."},
+        {name:"Hotel Jal Mandir Inn", location:"Opposite Jal Mandir", price:2100, rating:4.3, facilities:["Free WiFi","AC Rooms","Parking","Restaurant"], desc:"Temple view rooms with good service."},
+        {name:"Tirth Residency", location:"Pawapuri Chowk", price:1400, rating:3.9, facilities:["Fan/AC Rooms","Veg Food"], desc:"Budget rooms for families and groups."},
+        {name:"Hotel Shanti Palace", location:"Pawapuri Rajgir Road", price:2400, rating:4.4, facilities:["Free WiFi","AC Rooms","Breakfast","Parking"], desc:"Comfortable and quiet stay between Pawapuri and Rajgir."}
+    ]
+};
+
+var currentCity = "";
+var currentHotel = null;
+
+/* ================= HELPERS ================= */
+function $(id){ return document.getElementById(id); }
+function hideAll(){
+    ["spot-overlay","explore-overlay","stay-overlay","contact-overlay"].forEach(function(id){ $(id).classList.remove("show"); });
+}
+function closeMenus(){
+    document.querySelectorAll(".dropdown-menu").forEach(function(m){ m.classList.remove("show"); });
+}
+function toggleMenu(e, id){
+    e.stopPropagation();
+    var m = $(id), was = m.classList.contains("show");
+    closeMenus();
+    if(!was){ m.classList.add("show"); }
+}
+document.addEventListener("click", closeMenus);
+
+/* ================= HOME ================= */
+function showHome(){
+    hideAll(); closeMenus();
+    var html = "";
+    Object.keys(places).forEach(function(k){
+        var p = places[k];
+        html += '<div class="spot-column">' + slot({img:p.img, q:p.q, label:p.name, emoji:"&#128205;"}) +
+                '<h2>'+p.name+'</h2><p class="spot-city">'+p.tag+'</p>' +
+                '<button class="click-here" onclick="openExplore(\''+k+'\')">Click here</button></div>';
+    });
+    $("spot-grid").innerHTML = html;
+    fillImages($("spot-grid"));
+    $("spot-overlay").classList.add("show");
+}
+function closeSpot(){ $("spot-overlay").classList.remove("show"); }
+function backToHome(){ showHome(); }
+
+/* ================= EXPLORE ================= */
+function openExplore(city){
+    hideAll(); closeMenus();
+    currentCity = city;
+    var p = places[city];
+    $("explore-title").textContent = "Explore " + p.name;
+    var html = "";
+    p.spots.forEach(function(s){
+        html += '<div class="explore-spot"><h3>'+s.name+'</h3>' +
+                slot({img:s.img, q:s.q, label:s.name, emoji:"&#127963;"}) +
+                '<p class="blurb">'+s.blurb+'</p>' +
+                '<p class="history">'+s.history+'</p></div>';
+    });
+    $("explore-list").innerHTML = html;
+    $("discover-btn").textContent = "Discover";
+    $("explore-overlay").classList.add("show");
+    fillImages($("explore-list"));
+}
+function toggleHistory(){
+    var items = document.querySelectorAll("#explore-list .history");
+    var show = !(items.length && items[0].classList.contains("show"));
+    items.forEach(function(h){ h.classList.toggle("show", show); });
+    $("discover-btn").textContent = show ? "Hide" : "Discover";
+}
+function closeExplore(){ $("explore-overlay").classList.remove("show"); }
+
+/* ================= STAY ================= */
+function openStay(city){
+    hideAll(); closeMenus();
+    currentCity = city;
+    var cityNo = Object.keys(hotels).indexOf(city);
+    $("stay-title").textContent = "Stay in " + places[city].name;
+    var slotsInfo = [
+        {label:"Room",    cq:"hotel room",     emoji:"&#128716;"},
+        {label:"Lobby",   cq:"hotel lobby",    emoji:"&#127976;"},
+        {label:"Outside", cq:"hotel building", emoji:"&#127968;"}
+    ];
+    var html = "";
+    hotels[city].forEach(function(h, i){
+        var imgs = "";
+        slotsInfo.forEach(function(s, n){
+            var own = h.imgs && h.imgs[n];
+            imgs += '<div class="img-box">' +
+                    slot({img:own, cq:s.cq, ci:(cityNo*5 + i), label:s.label, emoji:s.emoji}) +
+                    '<div class="img-label">'+s.label+'</div></div>';
+        });
+        var fac = h.facilities.map(function(f){ return "<span>"+f+"</span>"; }).join("");
+        html += '<div class="hotel-card">' +
+            '<div class="hotel-images">'+imgs+'</div>' +
+            '<h3>'+h.name+'</h3>' +
+            '<p class="hotel-location">&#128205; '+h.location+'</p>' +
+            '<div class="hotel-facilities">'+fac+'</div>' +
+            '<div class="hotel-meta"><span class="rating">&#9733; '+h.rating+'</span><span class="price">&#8377;'+h.price+' / night</span></div>' +
+            '<p class="hotel-desc">'+h.desc+'</p>' +
+            '<div class="hotel-footer"><button class="booking-btn" onclick="openBooking(\''+city+'\','+i+')">Book Now</button></div>' +
+            '</div>';
+    });
+    $("stay-list").innerHTML = html;
+    $("stay-overlay").classList.add("show");
+    fillImages($("stay-list"));
+}
+function closeStay(){ $("stay-overlay").classList.remove("show"); }
+
+/* ================= BOOKING ================= */
+function openBooking(city, i){
+    currentHotel = hotels[city][i];
+    $("booking-hotel-name").textContent = currentHotel.name;
+    $("booking-hotel-price").textContent = "\u20B9" + currentHotel.price + " / night";
+    $("booking-form").style.display = "block";
+    $("confirm-box").style.display = "none";
+    $("booking-form").reset();
+    var today = new Date().toISOString().split("T")[0];
+    $("b-checkin").min = today;
+    $("b-checkout").min = today;
+    $("booking-overlay").classList.add("show");
+}
+function closeBooking(){ $("booking-overlay").classList.remove("show"); }
+
+function submitBooking(e){
+    e.preventDefault();
+    var ci = new Date($("b-checkin").value), co = new Date($("b-checkout").value);
+    var nights = Math.round((co - ci) / 86400000);
+    if(nights < 1){ alert("Check-out date check-in ke baad honi chahiye."); return false; }
+    var rooms = parseInt($("b-rooms").value, 10);
+    var total = nights * rooms * currentHotel.price;
+    $("confirm-summary").innerHTML =
+        '<p><span>Hotel:</span> '+currentHotel.name+'</p>' +
+        '<p><span>Name:</span> '+$("b-name").value+'</p>' +
+        '<p><span>Phone:</span> '+$("b-phone").value+'</p>' +
+        '<p><span>Check-in:</span> '+$("b-checkin").value+'</p>' +
+        '<p><span>Check-out:</span> '+$("b-checkout").value+'</p>' +
+        '<p><span>Guests:</span> '+$("b-guests").value+' | <span>Rooms:</span> '+rooms+'</p>' +
+        '<p><span>Nights:</span> '+nights+'</p>' +
+        '<p><span>Total:</span> &#8377;'+total+'</p>';
+    $("booking-id").textContent = "Booking ID: TW" + Math.floor(100000 + Math.random() * 900000);
+    $("booking-form").style.display = "none";
+    $("confirm-box").style.display = "block";
+    return false;
+}
+
+/* ================= CONTACT ================= */
+function openContact(){
+    hideAll(); closeMenus();
+    $("contact-sent").style.display = "none";
+    $("contact-overlay").classList.add("show");
+}
+function closeContact(){ $("contact-overlay").classList.remove("show"); }
+function sendMessage(e){
+    e.preventDefault();
+    $("contact-sent").style.display = "block";
+    $("contact-form").reset();
+    return false;
+}
+</script>
+</body>
+</html>
